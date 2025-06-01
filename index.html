@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gerenciador de Notas</title>
+  <style>
+    body { font-family: sans-serif; background: #f3f3f3; margin: 0; padding: 2rem; }
+    .container { max-width: 600px; margin: auto; background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    input, textarea { width: 100%; padding: 8px; margin: 8px 0; border: 1px solid #ccc; border-radius: 4px; }
+    button { padding: 8px 16px; margin-top: 8px; border: none; border-radius: 4px; cursor: pointer; }
+    .btn-primary { background: #2563eb; color: white; }
+    .btn-secondary { background: #facc15; }
+    .btn-danger { background: #ef4444; color: white; }
+    .nota { border: 1px solid #ddd; padding: 1rem; border-radius: 4px; margin-top: 1rem; background: #fff; }
+    .nota h3 { margin: 0; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Gerenciador de Notas</h1>
+
+    <input type="text" id="titulo" placeholder="Título da nota">
+    <textarea id="texto" placeholder="Texto da nota"></textarea>
+    <button class="btn-primary" onclick="salvarNota()" id="btn-salvar">Adicionar Nota</button>
+
+    <div id="notas"></div>
+  </div>
+
+  <script>
+    const API_URL = "https://crud-notes-ggcx.onrender.com/notas";
+    let editandoId = null;
+
+    async function buscarNotas() {
+      const res = await fetch(API_URL);
+      const data = await res.json();
+      const container = document.getElementById('notas');
+      container.innerHTML = '';
+      data.forEach(nota => {
+        const div = document.createElement('div');
+        div.className = 'nota';
+        div.innerHTML = `
+          <h3>${nota.titulo}</h3>
+          <p>${nota.texto}</p>
+          <button class="btn-secondary" onclick='editarNota(${JSON.stringify(nota)})'>Editar</button>
+          <button class="btn-danger" onclick='excluirNota(${nota.id})'>Excluir</button>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    async function salvarNota() {
+      const titulo = document.getElementById('titulo').value;
+      const texto = document.getElementById('texto').value;
+      const body = JSON.stringify({ titulo, texto });
+      const headers = { 'Content-Type': 'application/json' };
+
+      const url = editandoId ? `${API_URL}/${editandoId}` : API_URL;
+      const method = editandoId ? 'PUT' : 'POST';
+
+      await fetch(url, { method, headers, body });
+
+      document.getElementById('titulo').value = '';
+      document.getElementById('texto').value = '';
+      document.getElementById('btn-salvar').innerText = 'Adicionar Nota';
+      editandoId = null;
+      buscarNotas();
+    }
+
+    function editarNota(nota) {
+      document.getElementById('titulo').value = nota.titulo;
+      document.getElementById('texto').value = nota.texto;
+      document.getElementById('btn-salvar').innerText = 'Atualizar Nota';
+      editandoId = nota.id;
+    }
+
+    async function excluirNota(id) {
+      await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
+      buscarNotas();
+    }
+
+    buscarNotas();
+  </script>
+</body>
+</html>
